@@ -2,67 +2,111 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 )
 
-type Animal struct {
-	food, locomotion, noise string
+type Animal interface {
+	Eat()
+	Move()
+	Speak()
 }
 
-func (a Animal) Eat() {
-	println(a.food)
+type Cow struct{}
+
+func (c Cow) Eat() {
+	println("grass")
+}
+func (c Cow) Move() {
+	println("walk")
+}
+func (c Cow) Speak() {
+	println("moo")
 }
 
-func (a Animal) Move() {
-	println(a.locomotion)
+type Bird struct{}
+
+func (b Bird) Eat() {
+	println("worms")
+}
+func (b Bird) Move() {
+	println("fly")
+}
+func (b Bird) Speak() {
+	println("peep")
 }
 
-func (a Animal) Speak() {
-	println(a.noise)
+type Snake struct{}
+
+func (s Snake) Eat() {
+	println("mice")
+}
+
+func (s Snake) Move() {
+	println("slither")
+}
+
+func (s Snake) Speak() {
+	println("hsss")
 }
 
 func main() {
-	cow := Animal{food: "grass", locomotion: "walk", noise: "moo"}
-	bird := Animal{food: "worms", locomotion: "fly", noise: "peep"}
-	snake := Animal{food: "mice", locomotion: "slither", noise: "hsss"}
+	animals := make(map[string]Animal)
 
 	stdin := bufio.NewReader(os.Stdin)
 
 	for {
-		println("Print request (animal property): ")
+		println("Print command  or query>")
 		r, err := stdin.ReadString('\n')
 
 		if err != nil {
-			fmt.Printf("Error happened: %s, repeating", err.Error())
+			fmt.Printf("Error happened: %s, repeating\n", err.Error())
 			continue
 		}
 
 		req := strings.Split(strings.TrimSuffix(r, "\n"), " ")
-		animal := req[0]
-
-		var prop string
-		if len(req) < 2 {
-			prop = ""
-		} else {
-			prop = req[1]
+		if len(req) < 3 {
+			fmt.Printf("Command or query must have 3 parameters, buw was: %d\n", len(req))
+			continue
 		}
 
-		switch animal {
-		case "cow":
-			printProp(cow, prop)
-		case "bird":
-			printProp(bird, prop)
-		case "snake":
-			printProp(snake, prop)
-		default:
-			fmt.Printf("Unknown animal '%s'\n", animal)
+		command := req[0]
+
+		switch command {
+		case "newanimal":
+			name, kind := req[1], req[2]
+			a, err := NewAnimal(kind)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			} else {
+				animals[name] = a
+			}
+			println("New animal added")
+		case "query":
+			name, prop := req[1], req[2]
+			animal := animals[name]
+			PrintProp(animal, prop)
 		}
 	}
 }
 
-func printProp(animal Animal, prop string) {
+func NewAnimal(kind string) (Animal, error) {
+	switch kind {
+	case "cow":
+		return new(Cow), nil
+	case "snake":
+		return new(Snake), nil
+	case "bird":
+		return new(Bird), nil
+	default:
+		return nil, errors.New("unknown animal type")
+	}
+}
+
+func PrintProp(animal Animal, prop string) {
 	switch prop {
 	case "food":
 		animal.Eat()
